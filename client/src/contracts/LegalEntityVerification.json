@@ -3103,10 +3103,16 @@
       "links": {},
       "address": "0xAb5552101E856b221Db8fFFdD4477e5C9C942Bf1",
       "transactionHash": "0x6fb7c069b4af8d5b90a9c087716bf3b4611b3a0a8fdcce7b1220bc008d12020b"
+    },
+    "5777": {
+      "events": {},
+      "links": {},
+      "address": "0x682f318F9aE3a5D0fEA5a8E8B869253b8ab79f90",
+      "transactionHash": "0x5c9725970f0283ebf286f919859aa26faf77c65d061d09da1304102db0610b56"
     }
   },
   "schemaVersion": "3.4.4",
-  "updatedAt": "2021-12-28T19:21:27.858Z",
+  "updatedAt": "2021-12-28T19:32:00.876Z",
   "networkType": "ethereum",
   "devdoc": {
     "author": "Deniz SurmeliDoğukan Türksoy",

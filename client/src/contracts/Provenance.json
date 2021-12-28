@@ -28301,10 +28301,16 @@
       "links": {},
       "address": "0xc86D0FD3e529Ed61Abc10D8CDfDD160A903512b8",
       "transactionHash": "0x5a064019f019da03fb36c24341783eec216b7f8e491007a0fb4a2cc51c743450"
+    },
+    "5777": {
+      "events": {},
+      "links": {},
+      "address": "0x9E71158c18BEB5e32D983a585C4d2AEC49006934",
+      "transactionHash": "0xefa31d189b848def4a6bb677438118d8d7baecf7a287b883d8db33dd8131027d"
     }
   },
   "schemaVersion": "3.4.4",
-  "updatedAt": "2021-12-28T19:21:27.835Z",
+  "updatedAt": "2021-12-28T19:32:00.864Z",
   "networkType": "ethereum",
   "devdoc": {
     "author": "Deniz SurmeliDoğukan Türksoy",

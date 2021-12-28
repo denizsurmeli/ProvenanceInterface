@@ -6,7 +6,7 @@ import getWeb3 from "./getWeb3";
 import "./App.css";
 
 class App extends Component {
-  state = {loaded:false};
+  state = {loaded:false,legalEntityChairman:null,provenanceChairman:null};
 
   componentDidMount = async () => {
     try {
@@ -29,11 +29,17 @@ class App extends Component {
         Provenance.networks[this.networkId] && Provenance.networks[this.networkId].address
       );
 
+      const legalEntityChairman = await this.legalEntityVerificationInstance.methods.getStateAuthorityAddress().call();
 
+      const provenanceChairman = await this.provenanceInstance.methods.factory().call();
 
       // Set web3, accounts, and contract to the state, and then proceed with an
       // example of interacting with the contract's methods.
-      this.setState({loaded:true});
+      this.setState({
+        loaded:true,
+        legalEntityChairman:legalEntityChairman,
+        provenanceChairman:provenanceChairman
+      });
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert(
@@ -50,6 +56,8 @@ class App extends Component {
     return (
       <div className="App">
         <h1>Supply Chain Project</h1>
+        <h3>LegalEntityVerification Chairman:{this.state.legalEntityChairman}</h3>
+        <h3>Provenance Chairman:{this.state.provenanceChairman}</h3>
       </div>
     );
   }
