@@ -20,14 +20,22 @@ class App extends Component {
     networkId:'',
     accounts:[],
     LEVChairman:'',
-    provenanaceChairman:'',
+    provenanceChairman:'',
     isUserLEVChairman:false,
     isUserProvenanceChairman:false,
     toBeVerifiedAccount:"",
     isVerifySuccessful:false,
     toBeUnverifiedAccount:"",
     isUnverifySuccessful:false,
-    queriedAccount:null
+    queriedAccount:null,
+    zipCode:null,
+    isMinted:false,
+    sendTo:null,
+    tokenId:null,
+    isTransferSuccessful:false,
+    tokenToBeApproved:0,
+    isOwner:null,
+    isApprovalSuccessful:false,
   }
 
   /**
@@ -53,10 +61,12 @@ class App extends Component {
       let legalEntityChairman = await this.state.legalEntityVerificationInstance.methods.getStateAuthorityAddress().call();
       legalEntityChairman = legalEntityChairman.toLowerCase();
   
-      let provenanceChairman = await this.state.provenanceInstance.methods.factory().call();
-      provenanceChairman = legalEntityChairman.toLowerCase();
+      let provenanceChairman = await this.state.provenanceInstance.methods.getFactoryAddress().call();
+      provenanceChairman = provenanceChairman.toLowerCase();
+
       let isLEVChairman = false;
       let isProvenanceChairman = false;
+
       if(legalEntityChairman === this.state.accounts[0]){
         isLEVChairman = true;
       }
@@ -92,12 +102,14 @@ class App extends Component {
     });
     let isLEVChairman = false;
     let isProvenanceChairman = false;
+
     if(this.state.LEVChairman === this.state.accounts[0]){
       isLEVChairman = true;
     }
-    if(this.state.provenanaceChairman === this.state.accounts[0]){
+    if(this.state.provenanceChairman === this.state.accounts[0]){
       isProvenanceChairman = true;
     }
+
     this.setState({
       isUserLEVChairman:isLEVChairman,
       isUserProvenanceChairman:isProvenanceChairman
@@ -157,6 +169,94 @@ class App extends Component {
       console.error(err);
     }
   }
+
+  handleMint = async ()=>{
+    try{
+      await this.state.provenanceInstance.methods.mintProductToken(this.state.zipCode).send({from:this.state.accounts[0]});
+      this.setState({
+        zipCode:null,
+        isMinted:true,
+      });
+    }catch(err){
+      alert("Something went wrong with the minting process.");
+      this.setState({
+        zipCode:null,
+        isMinted:false,
+      });
+      console.error(err);
+    }
+  }
+
+  handleTransfer = async () =>{
+    try{
+      await this.state.provenanceInstance.methods.transferToken(this.state.accounts[0],this.state.sendTo,parseInt(this.state.tokenId)).send({
+        from:this.state.accounts[0]
+      });
+      this.setState({
+        sendTo:null,
+        tokenId:null,
+        isTransferSuccessful:true
+      });
+    }catch(err){
+      alert("Something went wrong while sending the token. Please check the fields.");
+      this.setState({
+        isTransferSuccessful:false
+      });
+      console.error(err);
+    }
+  }
+  handleApproveOwnership = async ()=>{
+    try{
+      let ownerOfTheToken = await this.state.provenanceInstance.methods.ownerOf(this.state.tokenToBeApproved).call();
+      ownerOfTheToken = ownerOfTheToken.toLowerCase();
+
+      if(this.state.accounts[0] === ownerOfTheToken){
+        this.setState({
+          isOwner:true
+        })
+        try{
+          await this.state.provenanceInstance.methods.approveOwnership(this.state.tokenId).send({
+            from:this.state.accounts[0]
+          });
+          this.setState({
+            isOwner:null,
+            isApprovalSuccessful:true
+          });
+        }catch(err){
+          alert("Something went wrong while approving the token ownership.");
+          this.setState({
+            isApprovalSuccessful:false
+          })
+          console.error(err);
+        }
+      }else{
+        this.setState({
+          isOwner:false
+        })
+      }
+
+    }catch(err){
+      alert("Something went wrong while interacting with the contract.");
+      console.error(err);
+    }
+  }
+
+  handleApproveInput = async (e)=>{
+    this.setState({tokenToBeApproved:parseInt(e.target.value)});
+    let ownerOfTheToken = await this.state.provenanceInstance.methods.ownerOf(this.state.tokenToBeApproved).call();
+    ownerOfTheToken = ownerOfTheToken.toLowerCase();
+
+    if(this.state.accounts[0] === ownerOfTheToken){
+      this.setState({
+        isOwner:true
+      })
+    }else{
+      this.setState({
+        isOwner:false
+      })
+    }
+  }
+
 
   async componentDidMount(){
     try{
@@ -228,12 +328,29 @@ class App extends Component {
             <p style={{display:(this.state.isUnverifySuccessful ? 'block':'none')}}>Unverification Complete.</p>
           </form>
         </div>
-        <div style={{
-          display:(this.state.isUserProvenanceChairman ?'block':'none')
-        }}>
+        <div>
           <h3>Provenance Operations</h3>
+          <div style={{display:(this.state.isUserProvenanceChairman ? 'block':'none')}}>
+            <form>
+              <label>Zip Code:</label>
+              <input type="number" onChange={(e)=>this.setState({zipCode:e.target.value})}></input>
+              <button type="button" onClick={this.handleMint}>Click to mint token.</button>
+              <p style={{display:(this.state.isMinted) ? 'block':'none'}}>Token minted !</p>
+            </form>
+          </div>
+          <form>
+            <label>To:</label>
+            <input type="text" onChange={(e)=>this.setState({sendTo:e.target.value})}></input>
+            <label>TokenID:</label>
+            <input type="number" onChange={(e)=>this.setState({tokenId:e.target.value})}></input>
+            <button type="button" onClick={this.handleTransfer}>Send Token!</button>
+          </form>
+          <form>
+            <label>Approve token</label>
+            <input type="number" onChange={this.handleApproveInput}></input>
+            <button type="button" value={this.state.isOwner ? "Enabled":"Disabled"} onClick={this.handleApproveOwnership}>Approve Ownership !</button>
+          </form>
         </div>
-
       </div>
     );
   }
