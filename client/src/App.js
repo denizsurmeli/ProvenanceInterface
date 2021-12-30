@@ -22,7 +22,12 @@ class App extends Component {
     LEVChairman:'',
     provenanaceChairman:'',
     isUserLEVChairman:false,
-    isUserProvenanceChairman:false
+    isUserProvenanceChairman:false,
+    toBeVerifiedAccount:"",
+    isVerifySuccessful:false,
+    toBeUnverifiedAccount:"",
+    isUnverifySuccessful:false,
+    queriedAccount:null
   }
 
   /**
@@ -118,6 +123,41 @@ class App extends Component {
     }
   }
 
+  handleLEVVerify = async ()=>{
+    try{
+      await this.state.legalEntityVerificationInstance.methods.verify(this.state.toBeVerifiedAccount).send({from:this.state.accounts[0]});
+      this.setState({
+        toBeVerifiedAccount:"",
+        isVerifySuccessful:true
+      })
+    }catch(err){
+      alert("Something went wrong with the verification process.");
+      this.setState({
+        toBeVerifiedAccount:"",
+        isVerifySuccessful:false
+      })
+      console.error(err);
+
+    }
+  }
+
+  handleLEVUnverify = async ()=>{
+    try{
+      await this.state.legalEntityVerificationInstance.methods.unverify(this.state.toBeUnverifiedAccount).send({from:this.state.accounts[0]});
+      this.setState({
+        toBeUnverifiedAccount:"",
+        isUnverifySuccessful:true
+      })
+    }catch(err){
+      alert("Something went wrong with the unverification process.");
+      this.setState({
+        toBeUnverifiedAccount:"",
+        isUnverifySuccessful:false
+      })
+      console.error(err);
+    }
+  }
+
   async componentDidMount(){
     try{
       //get wallet provider,put it on state so we can use. If null, trigger emergencies.
@@ -128,15 +168,13 @@ class App extends Component {
       if(this.state.web3 === null){
         alert("Web3 provider is not found. You can't use the app. Install a wallet provider.")
       }else{
+        //build the initial state. First opening, get accounts, get the current chain, after checks, inject the state.
         let tempArr = await this.state.web3.eth.getAccounts();
         tempArr = tempArr.map(account=>account.toLowerCase());
         this.setState({
           accounts:tempArr,
           networkId:await this.state.web3.eth.net.getId()
         })
-        ////// AVALANCHE_FUJI_TESTNET_ID : 43114
-        //4 for rinkeby, probably something will go shitty for Avalanche Fuji.
-        //let's open the ticket now @Ticket->#145:bug(interface):avalanche network id fails
         if(this.state.networkId === NETWORK_ID){
           this.injectContractState();
           this.setState({
@@ -147,19 +185,20 @@ class App extends Component {
         }
       }
 
+      //listen changes regularly, if any change, use handlers.
       window.ethereum.on("accountsChanged",this.handleAccountsChanged);
       window.ethereum.on("chainChanged",this.handleChainChanged);
 
     //catch all non-specified error. Should left with 1-2 edge cases after full build.
     }catch(err){
-      alert("OOPS! Something went very bad !");
+      alert("OOPS! Something went wrong! Check console for further errors.");
       console.error(err);
     }
   }
 
 
   render (){
-    // If the app is not loaded correctly, it's because of network. Prompt it to user.
+    // If the app is not loaded correctly, it's because of the network. Prompt it to user.
     if(!this.state.loaded){
       return(
         <div className="App">
@@ -177,13 +216,22 @@ class App extends Component {
         <div style={{
           display:(this.state.isUserLEVChairman ? 'block':'none')
         }}>
-          <h3>Legal Entity Verification</h3>
+          <h3>Legal Entity Verification Operations</h3>
+          <form>
+            <input type="text" onChange={(e)=>this.setState({toBeVerifiedAccount:e.target.value})}></input>
+            <button type="button" onClick={this.handleLEVVerify}>Click to verify!</button>
+            <p style={{display:(this.state.isVerifySuccessful ? 'block':'none')}}>Verification Complete.</p>
+          </form>
+          <form>
+            <input type="text" onChange={(e)=>this.setState({toBeUnverifiedAccount:e.target.value})}></input>
+            <button type="button" onClick={this.handleLEVUnverify}>Click to unverify!</button>
+            <p style={{display:(this.state.isUnverifySuccessful ? 'block':'none')}}>Unverification Complete.</p>
+          </form>
         </div>
-
         <div style={{
           display:(this.state.isUserProvenanceChairman ?'block':'none')
         }}>
-          <h3>Provenance</h3>
+          <h3>Provenance Operations</h3>
         </div>
 
       </div>

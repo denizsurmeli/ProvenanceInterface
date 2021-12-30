@@ -47,7 +47,6 @@ contract LegalEntityVerification {
     }
 
     function unverify(address _address) onlyStateAuthority(msg.sender) onlyVerified(_address) public{
-        
         verifiedAddresses[_address] = false;
         emit AccountUnverified(_address);
     }

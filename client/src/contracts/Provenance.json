@@ -28299,8 +28299,8 @@
     "4": {
       "events": {},
       "links": {},
-      "address": "0x72b69E2C572FA05E5d85Ccc5220B2c76cf90A6b9",
-      "transactionHash": "0x54a8c6b6c8095727ee951a2cb63ebbfe1708e39f9dd7b0b8f28d05e09b7f13f7"
+      "address": "0x3Efa13668900dC080bC3f028eC746368Ea698dE4",
+      "transactionHash": "0x824c9ad89f1a6d57022ac685a9a14323d06ff8fe2a0c099fb494e318b7487b61"
     },
     "5777": {
       "events": {},
@@ -28310,7 +28310,7 @@
     }
   },
   "schemaVersion": "3.4.4",
-  "updatedAt": "2021-12-30T12:52:11.879Z",
+  "updatedAt": "2021-12-30T18:53:46.297Z",
   "networkType": "ethereum",
   "devdoc": {
     "author": "Deniz SurmeliDoğukan Türksoy",
