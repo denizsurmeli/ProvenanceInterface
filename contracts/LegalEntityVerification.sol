@@ -14,6 +14,9 @@ contract LegalEntityVerification {
     /// @notice Deployer of the contract will be stored here for later checkings.
     address public stateAuthority;
 
+    event AccountVerified(address _address);
+    event AccountUnverified(address _address);
+
     constructor(){
         stateAuthority = msg.sender;
     }
@@ -21,13 +24,18 @@ contract LegalEntityVerification {
     /// @notice Only state authority can perform actions.
     /// @param _address Address to be queried.
     modifier onlyStateAuthority(address _address){
-        require(_address == msg.sender);
+        require(_address == msg.sender,"Caller is not the state authority.");
         _;
     }
     /// @notice Only non-verified addresses can perform actions.
     /// @param _address Address to be queried.
     modifier onlyNonVerified(address _address){
-        require(!(verifiedAddresses[_address]));
+        require(!(verifiedAddresses[_address]),"Address is already verified.");
+        _;
+    }
+
+    modifier onlyVerified(address _address){
+        require(verifiedAddresses[_address] == false,"Address is already non-verified.");
         _;
     }
 
@@ -35,6 +43,13 @@ contract LegalEntityVerification {
     /// @param _address address to be verified. 
     function verify(address _address) onlyStateAuthority(msg.sender) onlyNonVerified(_address) public {
         verifiedAddresses[_address] = true;
+        emit AccountVerified(_address);
+    }
+
+    function unverify(address _address) onlyStateAuthority(msg.sender) onlyVerified(_address) public{
+        
+        verifiedAddresses[_address] = false;
+        emit AccountUnverified(_address);
     }
     
     /// @notice Query the verification of an address.
