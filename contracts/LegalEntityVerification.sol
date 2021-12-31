@@ -35,7 +35,7 @@ contract LegalEntityVerification {
     }
 
     modifier onlyVerified(address _address){
-        require(verifiedAddresses[_address] == false,"Address is already non-verified.");
+        require(verifiedAddresses[_address],"Address is already non-verified.");
         _;
     }
 

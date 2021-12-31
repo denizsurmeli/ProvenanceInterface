@@ -3,8 +3,6 @@ import LegalEntityVerification from "./contracts/LegalEntityVerification.json";
 import Provenance from "./contracts/Provenance.json";
 import getWeb3 from "./getWeb3";
 
-import "./App.css";
-
 
 // config for rinkeby.
 const CHAIN_ID = '0x4'
@@ -36,6 +34,10 @@ class App extends Component {
     tokenToBeApproved:0,
     isOwner:null,
     isApprovalSuccessful:false,
+    accountOwnedTokenIds:[],
+    awaitingApprovals:[],
+    currentCirculatingTokenCount:0,
+    queryAccount:null
   }
 
   /**
@@ -73,11 +75,14 @@ class App extends Component {
       if(provenanceChairman === this.state.accounts[0]){
         isProvenanceChairman = true;
       }
+
+      let currentSupply = await this.state.provenanceInstance.methods.serialId().call();
       this.setState({
         LEVChairman:legalEntityChairman,
         provenanceChairman:provenanceChairman,
         isUserLEVChairman:isLEVChairman,
-        isUserProvenanceChairman:isProvenanceChairman
+        isUserProvenanceChairman:isProvenanceChairman,
+        currentCirculatingTokenCount:parseInt(currentSupply)
       });
   }
 
@@ -155,6 +160,7 @@ class App extends Component {
 
   handleLEVUnverify = async ()=>{
     try{
+      console.log(this.state.toBeUnverifiedAccount);
       await this.state.legalEntityVerificationInstance.methods.unverify(this.state.toBeUnverifiedAccount).send({from:this.state.accounts[0]});
       this.setState({
         toBeUnverifiedAccount:"",
@@ -301,55 +307,90 @@ class App extends Component {
     // If the app is not loaded correctly, it's because of the network. Prompt it to user.
     if(!this.state.loaded){
       return(
-        <div className="App">
+        <div className="container">
           <p>You are in the wrong network.Change you network.</p>
         </div>
       )
     }
     //Else, get here, main app. 
     return(
-      <div className="App">
-        <h1>Supply Chain Project</h1>
-        <h4>LEV Chairman:{this.state.LEVChairman}</h4>
-        <h4>Provenance Chairman:{this.state.provenanceChairman}</h4>
-        <h4>Your current account:{this.state.accounts[0]}</h4>
-        <div style={{
-          display:(this.state.isUserLEVChairman ? 'block':'none')
-        }}>
-          <h3>Legal Entity Verification Operations</h3>
-          <form>
-            <input type="text" onChange={(e)=>this.setState({toBeVerifiedAccount:e.target.value})}></input>
-            <button type="button" onClick={this.handleLEVVerify}>Click to verify!</button>
-            <p style={{display:(this.state.isVerifySuccessful ? 'block':'none')}}>Verification Complete.</p>
-          </form>
-          <form>
-            <input type="text" onChange={(e)=>this.setState({toBeUnverifiedAccount:e.target.value})}></input>
-            <button type="button" onClick={this.handleLEVUnverify}>Click to unverify!</button>
-            <p style={{display:(this.state.isUnverifySuccessful ? 'block':'none')}}>Unverification Complete.</p>
-          </form>
-        </div>
+    <div className="container-fluid">
+      <div className="mx-auto border rounded p-3" style={{
+        width:'50%'
+      }}>
         <div>
-          <h3>Provenance Operations</h3>
-          <div style={{display:(this.state.isUserProvenanceChairman ? 'block':'none')}}>
-            <form>
-              <label>Zip Code:</label>
-              <input type="number" onChange={(e)=>this.setState({zipCode:e.target.value})}></input>
-              <button type="button" onClick={this.handleMint}>Click to mint token.</button>
-              <p style={{display:(this.state.isMinted) ? 'block':'none'}}>Token minted !</p>
-            </form>
+          <h2>Supply Chain Project</h2>
+          <p><b>Legal Entity Chairman:</b> {this.state.LEVChairman}</p>
+          <p><b>Provenance Chairman:</b> {this.state.provenanceChairman}</p>
+          <p><b>Current circualting supply:</b>{this.state.currentCirculatingTokenCount}</p>
+        </div>
+      </div>
+
+      <div className="row">
+        <div className="col border rounded p-3">
+        <div>
+          <h3>Legal Entity Verification Operations</h3>
+          <div style={{display:(this.state.isUserLEVChairman ? 'block':'none')}}>
+          <label for="accountString">Verify Account</label>
+              <div className="input-group mb-3">
+                <input className="form-control" type="text" onChange={(e)=>this.setState({toBeVerifiedAccount:e.target.value})}></input>
+                <button className= "btn btn-primary" type="button" onClick={this.handleLEVVerify}>Click to verify!</button>
+                {this.state.isVerifySuccessful ? alert("Verification Successful"):null}
+              </div>
+              <label>Unverify Account</label>
+              <div className="input-group mb-3">
+                <input className="form-control" type="text" onChange={(e)=>this.setState({toBeUnverifiedAccount:e.target.value})}></input>
+                <button className= "btn btn-primary" type="button" onClick={this.handleLEVUnverify}>Click to unverify!</button>
+                {this.state.isUnverifySuccessful ? alert("Unverification Successful"):null}
+              </div>
           </div>
-          <form>
-            <label>To:</label>
-            <input type="text" onChange={(e)=>this.setState({sendTo:e.target.value})}></input>
-            <label>TokenID:</label>
-            <input type="number" onChange={(e)=>this.setState({tokenId:e.target.value})}></input>
-            <button type="button" onClick={this.handleTransfer}>Send Token!</button>
-          </form>
-          <form>
-            <label>Approve token</label>
-            <input type="number" onChange={this.handleApproveInput}></input>
-            <button type="button" value={this.state.isOwner ? "Enabled":"Disabled"} onClick={this.handleApproveOwnership}>Approve Ownership !</button>
-          </form>
+          <label>Is account verified:</label>
+          <div className="input-group mb-3">
+            <input className="form-control" type="text" onChange={(e)=>this.setState({queryAccount:e.target.value})}></input>
+            <button className= "btn btn-primary" type="button" onClick={}>Query</button>
+            
+          </div>
+            </div>
+            <div>
+              <h3>Provenance Operations</h3>
+              <div style={{display:(this.state.isUserProvenanceChairman ? 'block':'none')}} >
+                <label>Zip Code:</label>
+                <div className="input-group mb-3">
+                  <input className="form-control" type="number" onChange={(e)=>this.setState({zipCode:e.target.value})}></input>
+                  <button className="btn btn-primary" 
+                  type="button" onClick={this.handleMint}>Click to mint token.</button>
+                  <p style={{display:(this.state.isMinted) ? 'block':'none'}}>Token minted !</p>
+                </div>
+              </div>
+              <div className="input-group">
+              <div className="input-group-prepend">
+                <span className="input-group-text">Sending To,TokenId</span>
+              </div>
+                <input className="form-control" type="text" onChange={(e)=>this.setState({sendTo:e.target.value})}></input>
+                <input className="form-control" type="number" onChange={(e)=>this.setState({tokenId:e.target.value})}></input>
+                <button className="btn btn-primary" type="button" onClick={this.handleTransfer}>Send Token!</button>
+              </div>
+              <label>Approve token</label>
+              <div className="input-group mb-3">
+                <input className="form-control" type="number" onChange={this.handleApproveInput}></input>
+                <button className="btn btn-primary" type="button" value={this.state.isOwner ? "Enabled":"Disabled"} onClick={this.handleApproveOwnership}>Approve Ownership !</button>
+              </div>
+            </div>
+        </div>
+        <div className="col border rounded p-3">
+            <h3>Account Operations</h3>
+            <p><b>Your current account:</b> {this.state.accounts[0]}</p>
+            <p><b>Your current owned tokenId's</b></p>
+            <div>
+              <p>{this.state.accountOwnedTokenIds.length === 0 ?'You currently own no token.':'Your current token Ids:'}</p>
+              <ul display={(this.state.accountOwnedTokenIds.length !== 0).toString()} className="list-group">
+                {
+                  this.state.accountOwnedTokenIds.map((e)=>{
+                    return <li key={e} className="list-group-item">{e}</li>})
+                }
+              </ul> 
+            </div>
+        </div>
         </div>
       </div>
     );
