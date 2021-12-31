@@ -52,6 +52,8 @@ contract Provenance is ERC721{
     /// @notice Emits when an owner approves the ownership.
     event TokenApproved(uint256 tokenId,address tokenOwner);
 
+    event TokenMinted(uint256 tokenId);
+
     mapping(uint256=>Product) products;
 
     /// @notice We use this mapping to track the origins of the products.
@@ -141,6 +143,7 @@ contract Provenance is ERC721{
         //auto-approve transfer for factory
         approveOwnership(productId);
 
+        emit TokenMinted(serialId);
         // increment the id by one since it's serialized. 
         serialId += 1; 
 

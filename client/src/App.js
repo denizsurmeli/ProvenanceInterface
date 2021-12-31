@@ -37,7 +37,8 @@ class App extends Component {
     accountOwnedTokenIds:[],
     awaitingApprovals:[],
     currentCirculatingTokenCount:0,
-    queryAccount:null
+    queryAccount:null,
+    queryResult:"State"
   }
 
   /**
@@ -77,12 +78,31 @@ class App extends Component {
       }
 
       let currentSupply = await this.state.provenanceInstance.methods.serialId().call();
+      let accountBalance = await this.state.provenanceInstance.methods.balanceOf(this.state.accounts[0]).call();
+      let userHoldings = []
+      try{
+        if(currentSupply > 0 && accountBalance > 0){
+          for(let i=0;i<currentSupply+1;i++){
+            let ownerOfi = await this.state.provenanceInstance.methods.ownerOf(i).call();
+            ownerOfi = ownerOfi.toLowerCase();
+            if(ownerOfi === this.state.accounts[0]){
+              userHoldings.push(i);
+            }
+          }
+        }
+      }catch(err){
+        console.error(err)
+      }
+
+      
+
       this.setState({
         LEVChairman:legalEntityChairman,
         provenanceChairman:provenanceChairman,
         isUserLEVChairman:isLEVChairman,
         isUserProvenanceChairman:isProvenanceChairman,
-        currentCirculatingTokenCount:parseInt(currentSupply)
+        currentCirculatingTokenCount:parseInt(currentSupply),
+        accountOwnedTokenIds:userHoldings
       });
   }
 
@@ -160,7 +180,6 @@ class App extends Component {
 
   handleLEVUnverify = async ()=>{
     try{
-      console.log(this.state.toBeUnverifiedAccount);
       await this.state.legalEntityVerificationInstance.methods.unverify(this.state.toBeUnverifiedAccount).send({from:this.state.accounts[0]});
       this.setState({
         toBeUnverifiedAccount:"",
@@ -183,6 +202,9 @@ class App extends Component {
         zipCode:null,
         isMinted:true,
       });
+      if(this.state.isMinted === true){
+        alert("Minting successful.");
+      }
     }catch(err){
       alert("Something went wrong with the minting process.");
       this.setState({
@@ -263,6 +285,26 @@ class App extends Component {
     }
   }
 
+  handleVerifyQuery = async ()=>{
+    try{
+      let queryResult = await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.queryAccount).call();
+
+      this.setState({
+        queryAccount:null,
+        queryResult:queryResult ? "Is verified." : "Is unverified." 
+      });
+      setTimeout(()=>{
+        this.setState({
+          queryResult:"State"
+        })
+      },3000)
+
+    }catch(err){
+      alert("Something went wrong during the query!");
+      console.log(err);
+    }
+    
+  }
 
   async componentDidMount(){
     try{
@@ -294,6 +336,7 @@ class App extends Component {
       //listen changes regularly, if any change, use handlers.
       window.ethereum.on("accountsChanged",this.handleAccountsChanged);
       window.ethereum.on("chainChanged",this.handleChainChanged);
+      
 
     //catch all non-specified error. Should left with 1-2 edge cases after full build.
     }catch(err){
@@ -331,7 +374,7 @@ class App extends Component {
         <div>
           <h3>Legal Entity Verification Operations</h3>
           <div style={{display:(this.state.isUserLEVChairman ? 'block':'none')}}>
-          <label for="accountString">Verify Account</label>
+          <label>Verify Account</label>
               <div className="input-group mb-3">
                 <input className="form-control" type="text" onChange={(e)=>this.setState({toBeVerifiedAccount:e.target.value})}></input>
                 <button className= "btn btn-primary" type="button" onClick={this.handleLEVVerify}>Click to verify!</button>
@@ -344,10 +387,10 @@ class App extends Component {
                 {this.state.isUnverifySuccessful ? alert("Unverification Successful"):null}
               </div>
           </div>
-          <label>Is account verified:</label>
+          <label>Verification Lookup</label>
           <div className="input-group mb-3">
             <input className="form-control" type="text" onChange={(e)=>this.setState({queryAccount:e.target.value})}></input>
-            <button className= "btn btn-primary" type="button" onClick={}>Query</button>
+            <button className= "btn btn-primary" type="button" onClick={this.handleVerifyQuery}>{this.state.queryResult}</button>
             
           </div>
             </div>
@@ -359,7 +402,6 @@ class App extends Component {
                   <input className="form-control" type="number" onChange={(e)=>this.setState({zipCode:e.target.value})}></input>
                   <button className="btn btn-primary" 
                   type="button" onClick={this.handleMint}>Click to mint token.</button>
-                  <p style={{display:(this.state.isMinted) ? 'block':'none'}}>Token minted !</p>
                 </div>
               </div>
               <div className="input-group">
