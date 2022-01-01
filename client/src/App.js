@@ -105,7 +105,8 @@ class App extends Component {
           userHoldings.map(async (e)=>{
             let query = await this.state.provenanceInstance.methods.ownerOf(e).call();
             query = query.toLowerCase();
-            if(query === this.state.accounts[0]){
+            let approvalState = await this.state.provenanceInstance.methods.getApprovalState(e).call();
+            if(query === this.state.accounts[0] && approvalState === true){
               userApprovals.push(e);
             }
           })
@@ -156,10 +157,46 @@ class App extends Component {
     if(this.state.provenanceChairman === this.state.accounts[0]){
       isProvenanceChairman = true;
     }
+    let currentSupply = await this.state.provenanceInstance.methods.serialId().call();
+    let accountBalance = await this.state.provenanceInstance.methods.balanceOf(this.state.accounts[0]).call();
+    let userHoldings = []
+    let userApprovals = []
+    try{
+      if(currentSupply > 0 && accountBalance > 0){
+        for(let i=0;i<currentSupply+1;i++){
+          let ownerOfi = await this.state.provenanceInstance.methods.ownerOf(i).call();
+          ownerOfi = ownerOfi.toLowerCase();
+          if(ownerOfi === this.state.accounts[0]){
+            userHoldings.push(i);
+          }
+        }
+      }
+    }catch(err){
+      console.log("Error while init,tokens");
+      console.error(err)
+    }
 
+    try{
+      if(userHoldings.length > 0){
+        userHoldings.map(async (e)=>{
+          let query = await this.state.provenanceInstance.methods.ownerOf(e).call();
+          query = query.toLowerCase();
+          let approvalState = await this.state.provenanceInstance.methods.getApprovalState(e).call();
+          if(query === this.state.accounts[0] && approvalState === true){
+            userApprovals.push(e);
+          }
+        })
+      }
+    }catch(err){
+      console.log("Error while init,approvals");
+      console.log(err);
+    }
+    
     this.setState({
       isUserLEVChairman:isLEVChairman,
-      isUserProvenanceChairman:isProvenanceChairman
+      isUserProvenanceChairman:isProvenanceChairman,
+      accountOwnedTokenIds:userHoldings,
+      awaitingApprovals:userApprovals
     })
   }
 
