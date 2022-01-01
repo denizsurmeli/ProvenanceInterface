@@ -38,7 +38,11 @@ class App extends Component {
     awaitingApprovals:[],
     currentCirculatingTokenCount:0,
     queryAccount:null,
-    queryResult:"State"
+    queryResult:"Query",
+    isCurrentAccountVerified:null,
+    queryTokenId:null,
+    historyQuery:[],
+    isHistoryQuerySuccess:true
   }
 
   /**
@@ -80,6 +84,7 @@ class App extends Component {
       let currentSupply = await this.state.provenanceInstance.methods.serialId().call();
       let accountBalance = await this.state.provenanceInstance.methods.balanceOf(this.state.accounts[0]).call();
       let userHoldings = []
+      let userApprovals = []
       try{
         if(currentSupply > 0 && accountBalance > 0){
           for(let i=0;i<currentSupply+1;i++){
@@ -91,9 +96,24 @@ class App extends Component {
           }
         }
       }catch(err){
+        console.log("Error while init,tokens");
         console.error(err)
       }
 
+      try{
+        if(userHoldings.length > 0){
+          userHoldings.map(async (e)=>{
+            let query = await this.state.provenanceInstance.methods.ownerOf(e).call();
+            query = query.toLowerCase();
+            if(query === this.state.accounts[0]){
+              userApprovals.push(e);
+            }
+          })
+        }
+      }catch(err){
+        console.log("Error while init,approvals");
+        console.log(err);
+      }
       
 
       this.setState({
@@ -102,7 +122,8 @@ class App extends Component {
         isUserLEVChairman:isLEVChairman,
         isUserProvenanceChairman:isProvenanceChairman,
         currentCirculatingTokenCount:parseInt(currentSupply),
-        accountOwnedTokenIds:userHoldings
+        accountOwnedTokenIds:userHoldings,
+        awaitingApprovals:userApprovals
       });
   }
 
@@ -124,6 +145,7 @@ class App extends Component {
   handleAccountsChanged = async (accounts)=>{
     this.setState({
       accounts:accounts.map(account=>account.toLowerCase()),
+      isCurrentAccountVerified:await this.state.legalEntityVerificationInstance.methods.isVerified(accounts[0]).call()
     });
     let isLEVChairman = false;
     let isProvenanceChairman = false;
@@ -165,8 +187,14 @@ class App extends Component {
       await this.state.legalEntityVerificationInstance.methods.verify(this.state.toBeVerifiedAccount).send({from:this.state.accounts[0]});
       this.setState({
         toBeVerifiedAccount:"",
-        isVerifySuccessful:true
+        isVerifySuccessful:true,
+        isCurrentAccountVerified:await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.accounts[0]).call()
       })
+      setTimeout(()=>{
+        this.setState({
+          isVerifySuccessful:null
+        })
+      },1500)
     }catch(err){
       alert("Something went wrong with the verification process.");
       this.setState({
@@ -183,8 +211,14 @@ class App extends Component {
       await this.state.legalEntityVerificationInstance.methods.unverify(this.state.toBeUnverifiedAccount).send({from:this.state.accounts[0]});
       this.setState({
         toBeUnverifiedAccount:"",
-        isUnverifySuccessful:true
+        isUnverifySuccessful:true,
+        isCurrentAccountVerified:await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.accounts[0]).call()
       })
+      setTimeout(()=>{
+        this.setState({
+          isUnverifySuccessful:null
+        })
+      },1500)
     }catch(err){
       alert("Something went wrong with the unverification process.");
       this.setState({
@@ -201,6 +235,7 @@ class App extends Component {
       this.setState({
         zipCode:null,
         isMinted:true,
+        currentCirculatingTokenCount:await this.state.provenanceInstance.methods.serialId().call()
       });
       if(this.state.isMinted === true){
         alert("Minting successful.");
@@ -243,7 +278,7 @@ class App extends Component {
           isOwner:true
         })
         try{
-          await this.state.provenanceInstance.methods.approveOwnership(this.state.tokenId).send({
+          await this.state.provenanceInstance.methods.approveOwnership(this.state.tokenToBeApproved).send({
             from:this.state.accounts[0]
           });
           this.setState({
@@ -269,41 +304,47 @@ class App extends Component {
     }
   }
 
-  handleApproveInput = async (e)=>{
-    this.setState({tokenToBeApproved:parseInt(e.target.value)});
-    let ownerOfTheToken = await this.state.provenanceInstance.methods.ownerOf(this.state.tokenToBeApproved).call();
-    ownerOfTheToken = ownerOfTheToken.toLowerCase();
-
-    if(this.state.accounts[0] === ownerOfTheToken){
-      this.setState({
-        isOwner:true
-      })
-    }else{
-      this.setState({
-        isOwner:false
-      })
-    }
-  }
 
   handleVerifyQuery = async ()=>{
     try{
       let queryResult = await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.queryAccount).call();
 
       this.setState({
-        queryAccount:null,
         queryResult:queryResult ? "Is verified." : "Is unverified." 
       });
       setTimeout(()=>{
         this.setState({
-          queryResult:"State"
+          queryResult:"Query"
         })
       },3000)
 
     }catch(err){
+      console.log(this.state.queryAccount);
       alert("Something went wrong during the query!");
       console.log(err);
     }
     
+  }
+
+  handleTokenHistoryQuery = async ()=>{
+    try{
+      let historyQueryResult = await this.state.provenanceInstance.methods.getAllOwners(this.state.queryTokenId).call();
+
+      if(historyQueryResult.length > 0){
+        this.setState({
+          historyQuery:historyQueryResult,
+          isHistoryQuerySuccess:true
+        });
+      }else{
+        this.setState({
+          historyQuery:[],
+          isHistoryQuerySuccess:false
+        })
+      }
+    }catch(err){
+      alert("Something went wrong during the history query !");
+      console.error(err);
+    }
   }
 
   async componentDidMount(){
@@ -321,12 +362,14 @@ class App extends Component {
         tempArr = tempArr.map(account=>account.toLowerCase());
         this.setState({
           accounts:tempArr,
-          networkId:await this.state.web3.eth.net.getId()
+          networkId:await this.state.web3.eth.net.getId(),
+      
         })
         if(this.state.networkId === NETWORK_ID){
-          this.injectContractState();
-          this.setState({
-            loaded:true
+          await this.injectContractState();
+          await this.setState({
+            loaded:true,
+            isCurrentAccountVerified:await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.accounts[0]).call()
           })
         }else{
           this.promptChainChange();
@@ -365,7 +408,7 @@ class App extends Component {
           <h2>Supply Chain Project</h2>
           <p><b>Legal Entity Chairman:</b> {this.state.LEVChairman}</p>
           <p><b>Provenance Chairman:</b> {this.state.provenanceChairman}</p>
-          <p><b>Current circualting supply:</b>{this.state.currentCirculatingTokenCount}</p>
+          <p><b>Current circulating supply:</b>{this.state.currentCirculatingTokenCount}</p>
         </div>
       </div>
 
@@ -376,7 +419,7 @@ class App extends Component {
           <div style={{display:(this.state.isUserLEVChairman ? 'block':'none')}}>
           <label>Verify Account</label>
               <div className="input-group mb-3">
-                <input className="form-control" type="text" onChange={(e)=>this.setState({toBeVerifiedAccount:e.target.value})}></input>
+                <input className="form-control" type="text" onChange={(e)=>this.setState({toBeVerifiedAccount:e.target.value})}/>
                 <button className= "btn btn-primary" type="button" onClick={this.handleLEVVerify}>Click to verify!</button>
                 {this.state.isVerifySuccessful ? alert("Verification Successful"):null}
               </div>
@@ -389,9 +432,8 @@ class App extends Component {
           </div>
           <label>Verification Lookup</label>
           <div className="input-group mb-3">
-            <input className="form-control" type="text" onChange={(e)=>this.setState({queryAccount:e.target.value})}></input>
+            <input className="form-control" type="text" onChange={(e)=>this.setState({queryAccount:e.target.value})}/>
             <button className= "btn btn-primary" type="button" onClick={this.handleVerifyQuery}>{this.state.queryResult}</button>
-            
           </div>
             </div>
             <div>
@@ -404,7 +446,7 @@ class App extends Component {
                   type="button" onClick={this.handleMint}>Click to mint token.</button>
                 </div>
               </div>
-              <div className="input-group">
+              <div className="input-group mb-3">
               <div className="input-group-prepend">
                 <span className="input-group-text">Sending To,TokenId</span>
               </div>
@@ -414,20 +456,47 @@ class App extends Component {
               </div>
               <label>Approve token</label>
               <div className="input-group mb-3">
-                <input className="form-control" type="number" onChange={this.handleApproveInput}></input>
+                <input className="form-control" type="number" onChange={(e)=>this.setState({tokenToBeApproved:e.target.value})}></input>
                 <button className="btn btn-primary" type="button" value={this.state.isOwner ? "Enabled":"Disabled"} onClick={this.handleApproveOwnership}>Approve Ownership !</button>
               </div>
+              <label>Query the History of a Token</label>
+              <div className="input-group mb-3">
+                  <input className="form-control" type="number" onChange={(e)=>this.setState({queryTokenId:e.target.value})}></input>
+                  <button className="btn btn-primary" 
+                  type="button" onClick={this.handleTokenHistoryQuery}>Get the history of the token!</button>
+                </div>
+                <div>
+                  <p display={(!(this.state.isHistoryQuerySuccess===null)).toString()}>{this.state.historyQuery.length === 0 ?(this.state.isHistoryQuerySuccess ? null:'The token does not exist.'):`${this.state.queryTokenId} 's history:`}</p>
+                  <ul display={(this.state.historyQuery.length !== 0).toString()} className="list-group">
+                    {
+                      this.state.historyQuery.map((e)=>{
+                        return <li key={e} className="list-group-item">{e}</li>})
+                    }
+                  </ul> 
+                </div>
             </div>
         </div>
+        
         <div className="col border rounded p-3">
             <h3>Account Operations</h3>
             <p><b>Your current account:</b> {this.state.accounts[0]}</p>
+            <p><b>Your verification status:</b> {this.state.isCurrentAccountVerified ? "Verified":"Non-verified"}</p>
             <p><b>Your current owned tokenId's</b></p>
             <div>
               <p>{this.state.accountOwnedTokenIds.length === 0 ?'You currently own no token.':'Your current token Ids:'}</p>
               <ul display={(this.state.accountOwnedTokenIds.length !== 0).toString()} className="list-group">
                 {
                   this.state.accountOwnedTokenIds.map((e)=>{
+                    return <li key={e} className="list-group-item">{e}</li>})
+                }
+              </ul> 
+            </div>
+            <p><b>Your current awaiting token approvals tokenId's</b></p>
+            <div>
+              <p>{this.state.awaitingApprovals.length === 0 ?'You currently have no awaiting approval.':'Your current awaiting tokenId\'s.'}</p>
+              <ul display={(this.state.awaitingApprovals.length !== 0).toString()} className="list-group">
+                {
+                  this.state.awaitingApprovals.map((e)=>{
                     return <li key={e} className="list-group-item">{e}</li>})
                 }
               </ul> 

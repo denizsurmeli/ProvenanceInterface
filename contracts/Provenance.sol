@@ -59,7 +59,7 @@ contract Provenance is ERC721{
     /// @notice We use this mapping to track the origins of the products.
     mapping(uint256=>address[]) owners;
 
-    /// @notice We track is in approval or not.
+    /// @notice We track that the token is in approval or not.
     mapping(uint256=>bool) approvalState;
 
     /// @notice Only addresses that have been approved by state authority can perform actions.
