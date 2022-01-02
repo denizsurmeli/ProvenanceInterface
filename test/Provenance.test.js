@@ -1,5 +1,3 @@
-const { assert } = require("chai");
-
 const provenance = artifacts.require("Provenance");
 const legalEntityVerification = artifacts.require("LegalEntityVerification");
 

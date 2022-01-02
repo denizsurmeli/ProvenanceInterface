@@ -94,7 +94,13 @@ contract Provenance is ERC721{
     /// @param _tokenId ID of the token to be queried against. 
     /// @param _address In query address. 
     modifier onlyOwner(uint256 _tokenId,address _address){
-        require(ownerOf(_tokenId) ==  _address,"Only owner of the address can perform actions.");
+        require(ownerOf(_tokenId) ==  _address,"Only the owner of the token can perform actions.");
+        _;
+    }
+
+    modifier onlyApprovedToken(uint256 _tokenId,address _address){
+        require(ownerOf(_tokenId) == _address,"Only the owner of the token can perform actions.");
+        require(approvalState[_tokenId] == false,"You can only perform operations on approved tokens.");
         _;
     }
     
@@ -118,7 +124,7 @@ contract Provenance is ERC721{
     /// @param _from Address that is transfering.
     /// @param _to   Address to be transfered.
     /// @param _tokenId ID of the token to be transfered.
-    function transferToken(address _from,address _to, uint256 _tokenId) onlyOwner(_tokenId,_from) onlyVerifiedAddress(_to) onlyExistentToken(_tokenId)  public {
+    function transferToken(address _from,address _to, uint256 _tokenId) onlyOwner(_tokenId,_from) onlyApprovedToken(_tokenId,_from) onlyVerifiedAddress(_to) onlyExistentToken(_tokenId)  public {
         require(_to != ownerOf(_tokenId));
         _transfer(_from,_to,_tokenId);
         approvalState[_tokenId] = true;

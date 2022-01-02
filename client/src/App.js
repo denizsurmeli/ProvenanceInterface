@@ -5,8 +5,8 @@ import getWeb3 from "./getWeb3";
 
 
 // config for rinkeby.
-const CHAIN_ID = '0x4'
-const NETWORK_ID = 4
+const CHAIN_ID = '0xa869'
+const NETWORK_ID = 1
 
 
 class App extends Component {
@@ -31,7 +31,7 @@ class App extends Component {
     sendTo:null,
     tokenId:null,
     isTransferSuccessful:false,
-    tokenToBeApproved:0,
+    tokenToBeApproved:null,
     isOwner:null,
     isApprovalSuccessful:false,
     accountOwnedTokenIds:[],
@@ -82,39 +82,7 @@ class App extends Component {
       }
 
       let currentSupply = await this.state.provenanceInstance.methods.serialId().call();
-      let accountBalance = await this.state.provenanceInstance.methods.balanceOf(this.state.accounts[0]).call();
-      let userHoldings = []
-      let userApprovals = []
-      try{
-        if(currentSupply > 0 && accountBalance > 0){
-          for(let i=0;i<currentSupply+1;i++){
-            let ownerOfi = await this.state.provenanceInstance.methods.ownerOf(i).call();
-            ownerOfi = ownerOfi.toLowerCase();
-            if(ownerOfi === this.state.accounts[0]){
-              userHoldings.push(i);
-            }
-          }
-        }
-      }catch(err){
-        console.log("Error while init,tokens");
-        console.error(err)
-      }
-
-      try{
-        if(userHoldings.length > 0){
-          userHoldings.map(async (e)=>{
-            let query = await this.state.provenanceInstance.methods.ownerOf(e).call();
-            query = query.toLowerCase();
-            let approvalState = await this.state.provenanceInstance.methods.getApprovalState(e).call();
-            if(query === this.state.accounts[0] && approvalState === true){
-              userApprovals.push(e);
-            }
-          })
-        }
-      }catch(err){
-        console.log("Error while init,approvals");
-        console.log(err);
-      }
+      await this.updateAccountOperationStatus();
       
 
       this.setState({
@@ -123,8 +91,6 @@ class App extends Component {
         isUserLEVChairman:isLEVChairman,
         isUserProvenanceChairman:isProvenanceChairman,
         currentCirculatingTokenCount:parseInt(currentSupply),
-        accountOwnedTokenIds:userHoldings,
-        awaitingApprovals:userApprovals
       });
   }
 
@@ -135,28 +101,12 @@ class App extends Component {
     await window.ethereum.request({
       method:"wallet_switchEthereumChain",
       params:[{
-        chainId:CHAIN_ID //TODO:Change this to AVALANCHE_FUJI_TESTNET.
+        chainId:CHAIN_ID
       }]
     })
   }
 
-  /**
-   * Handle the state change after new account selection/insertion
-   */
-  handleAccountsChanged = async (accounts)=>{
-    this.setState({
-      accounts:accounts.map(account=>account.toLowerCase()),
-      isCurrentAccountVerified:await this.state.legalEntityVerificationInstance.methods.isVerified(accounts[0]).call()
-    });
-    let isLEVChairman = false;
-    let isProvenanceChairman = false;
-
-    if(this.state.LEVChairman === this.state.accounts[0]){
-      isLEVChairman = true;
-    }
-    if(this.state.provenanceChairman === this.state.accounts[0]){
-      isProvenanceChairman = true;
-    }
+  updateAccountOperationStatus = async ()=>{
     let currentSupply = await this.state.provenanceInstance.methods.serialId().call();
     let accountBalance = await this.state.provenanceInstance.methods.balanceOf(this.state.accounts[0]).call();
     let userHoldings = []
@@ -191,12 +141,36 @@ class App extends Component {
       console.log("Error while init,approvals");
       console.log(err);
     }
+
+    this.setState({
+      accountOwnedTokenIds:userHoldings,
+      awaitingApprovals:userApprovals
+    })
+  }
+
+  /**
+   * Handle the state change after new account selection/insertion
+   */
+  handleAccountsChanged = async (accounts)=>{
+    this.setState({
+      accounts:accounts.map(account=>account.toLowerCase()),
+      isCurrentAccountVerified:await this.state.legalEntityVerificationInstance.methods.isVerified(accounts[0]).call()
+    });
+    let isLEVChairman = false;
+    let isProvenanceChairman = false;
+
+    if(this.state.LEVChairman === this.state.accounts[0]){
+      isLEVChairman = true;
+    }
+    if(this.state.provenanceChairman === this.state.accounts[0]){
+      isProvenanceChairman = true;
+    }
+
+    await this.updateAccountOperationStatus();
     
     this.setState({
       isUserLEVChairman:isLEVChairman,
       isUserProvenanceChairman:isProvenanceChairman,
-      accountOwnedTokenIds:userHoldings,
-      awaitingApprovals:userApprovals
     })
   }
 
@@ -215,6 +189,9 @@ class App extends Component {
           networkId:NETWORK_ID,
           loaded:true
         })
+      }
+      if(this.state.loaded === true){
+        window.location.reload();
       }
     }
   }
@@ -277,6 +254,8 @@ class App extends Component {
       if(this.state.isMinted === true){
         alert("Minting successful.");
       }
+
+      await this.updateAccountOperationStatus();
     }catch(err){
       alert("Something went wrong with the minting process.");
       this.setState({
@@ -289,14 +268,34 @@ class App extends Component {
 
   handleTransfer = async () =>{
     try{
-      await this.state.provenanceInstance.methods.transferToken(this.state.accounts[0],this.state.sendTo,parseInt(this.state.tokenId)).send({
-        from:this.state.accounts[0]
-      });
-      this.setState({
-        sendTo:null,
-        tokenId:null,
-        isTransferSuccessful:true
-      });
+      let isTokenApproved = await this.state.provenanceInstance.methods.getApprovalState(parseInt(this.state.tokenId)).call();
+      let isToVerified = await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.sendTo).call();
+      if(isToVerified === false){
+        alert("You can't send a token to an address that is not verified !");
+        this.setState({
+          sendTo:null,
+          tokenId:null,
+          isTransferSuccessful:false
+        });
+      }
+      if(!isTokenApproved === false){
+        alert("This token is not approved. You can't perform operations on it.");
+        this.setState({
+          sendTo:null,
+          tokenId:null,
+          isTransferSuccessful:false
+        });
+      }else{
+        await this.state.provenanceInstance.methods.transferToken(this.state.accounts[0],this.state.sendTo,parseInt(this.state.tokenId)).send({
+          from:this.state.accounts[0]
+        });
+        this.setState({
+          sendTo:null,
+          tokenId:null,
+          isTransferSuccessful:true
+        });
+        await this.updateAccountOperationStatus();
+      }
     }catch(err){
       alert("Something went wrong while sending the token. Please check the fields.");
       this.setState({
@@ -322,6 +321,7 @@ class App extends Component {
             isOwner:null,
             isApprovalSuccessful:true
           });
+          await this.updateAccountOperationStatus();
         }catch(err){
           alert("Something went wrong while approving the token ownership.");
           this.setState({
@@ -330,6 +330,7 @@ class App extends Component {
           console.error(err);
         }
       }else{
+        alert("You are not the owner of the token.You can't approve it.")
         this.setState({
           isOwner:false
         })
@@ -393,7 +394,8 @@ class App extends Component {
       //handle emergency
       if(this.state.web3 === null){
         alert("Web3 provider is not found. You can't use the app. Install a wallet provider.")
-      }else{
+      }
+      else{
         //build the initial state. First opening, get accounts, get the current chain, after checks, inject the state.
         let tempArr = await this.state.web3.eth.getAccounts();
         tempArr = tempArr.map(account=>account.toLowerCase());
@@ -402,13 +404,15 @@ class App extends Component {
           networkId:await this.state.web3.eth.net.getId(),
       
         })
-        if(this.state.networkId === NETWORK_ID){
+      if(this.state.networkId === NETWORK_ID){
           await this.injectContractState();
+          await this.updateAccountOperationStatus();
           await this.setState({
             loaded:true,
             isCurrentAccountVerified:await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.accounts[0]).call()
           })
-        }else{
+        }
+      else{
           this.promptChainChange();
         }
       }
@@ -496,7 +500,7 @@ class App extends Component {
                 <input className="form-control" type="number" onChange={(e)=>this.setState({tokenToBeApproved:e.target.value})}></input>
                 <button className="btn btn-primary" type="button" value={this.state.isOwner ? "Enabled":"Disabled"} onClick={this.handleApproveOwnership}>Approve Ownership !</button>
               </div>
-              <label>Query the History of a Token</label>
+              <label>Query the History of a Token(sorted from the <b>origin</b> account to the last owner)</label>
               <div className="input-group mb-3">
                   <input className="form-control" type="number" onChange={(e)=>this.setState({queryTokenId:e.target.value})}></input>
                   <button className="btn btn-primary" 
@@ -520,7 +524,7 @@ class App extends Component {
             <p><b>Your verification status:</b> {this.state.isCurrentAccountVerified ? "Verified":"Non-verified"}</p>
             <p><b>Your current owned tokenId's</b></p>
             <div>
-              <p>{this.state.accountOwnedTokenIds.length === 0 ?'You currently own no token.':'Your current token Ids:'}</p>
+              <p>{this.state.accountOwnedTokenIds.length === 0 ?'You currently own no token.':null}</p>
               <ul display={(this.state.accountOwnedTokenIds.length !== 0).toString()} className="list-group">
                 {
                   this.state.accountOwnedTokenIds.map((e)=>{
@@ -530,7 +534,7 @@ class App extends Component {
             </div>
             <p><b>Your current awaiting token approvals tokenId's</b></p>
             <div>
-              <p>{this.state.awaitingApprovals.length === 0 ?'You currently have no awaiting approval.':'Your current awaiting tokenId\'s.'}</p>
+              <p>{this.state.awaitingApprovals.length === 0 ?'You currently have no awaiting approval.':null}</p>
               <ul display={(this.state.awaitingApprovals.length !== 0).toString()} className="list-group">
                 {
                   this.state.awaitingApprovals.map((e)=>{

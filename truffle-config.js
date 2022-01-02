@@ -39,5 +39,11 @@ module.exports = {
   ],
   api_keys:{
     etherscan:process.env.ETHERSCAN_API_KEY
-  }
+  },
+  mocha: {
+    reporter: 'eth-gas-reporter',
+    reporterOptions:{
+      showMethodSig:true
+    }
+  },
 };

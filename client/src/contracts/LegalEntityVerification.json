@@ -5446,11 +5446,17 @@
     "version": "0.8.11+commit.d7f03943.Emscripten.clang"
   },
   "networks": {
+    "1": {
+      "events": {},
+      "links": {},
+      "address": "0x02039e9173ac762fA43183AC04594C08FA4A50d1",
+      "transactionHash": "0x067418e182cf296b7ecd8801ba5b67d0cdad9f3d473de6aefea2310277795593"
+    },
     "4": {
       "events": {},
       "links": {},
-      "address": "0x8c372107e625d4F0bF28aD2E9b91543b8e3f2873",
-      "transactionHash": "0xa46b9c6f083d8420110e7b3534274dcb662151132a7a9c0c4dd4488642cca79e"
+      "address": "0xB392106d197715e3865a7eB963ADAB080DAAf6e8",
+      "transactionHash": "0x64883c3a4dd705299520b51eedf1c26a513af7bc9f2af5d75e9e6942acea8d97"
     },
     "5777": {
       "events": {},
@@ -5460,7 +5466,7 @@
     }
   },
   "schemaVersion": "3.4.4",
-  "updatedAt": "2021-12-31T18:42:30.231Z",
+  "updatedAt": "2022-01-02T17:55:55.411Z",
   "networkType": "ethereum",
   "devdoc": {
     "author": "Deniz SurmeliDoğukan Türksoy",
