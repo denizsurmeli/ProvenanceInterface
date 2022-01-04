@@ -2,9 +2,11 @@ import React, { Component } from "react";
 import LegalEntityVerification from "./contracts/LegalEntityVerification.json";
 import Provenance from "./contracts/Provenance.json";
 import getWeb3 from "./getWeb3";
+import "react-loader-spinner/dist/loader/css/react-spinner-loader.css";
+import Loader from "react-loader-spinner";
 
 
-// config for rinkeby.
+// config for Avalanche Fuji Testnet.
 const CHAIN_ID = '0xa869'
 const NETWORK_ID = 1
 
@@ -106,6 +108,10 @@ class App extends Component {
     })
   }
 
+  updateAwaitingTokens = async() =>{
+    
+  }
+
   updateAccountOperationStatus = async ()=>{
     let currentSupply = await this.state.provenanceInstance.methods.serialId().call();
     let accountBalance = await this.state.provenanceInstance.methods.balanceOf(this.state.accounts[0]).call();
@@ -128,14 +134,14 @@ class App extends Component {
 
     try{
       if(userHoldings.length > 0){
-        userHoldings.map(async (e)=>{
-          let query = await this.state.provenanceInstance.methods.ownerOf(e).call();
+        for(let i =0;i<userHoldings.length;i++){
+          let query = await this.state.provenanceInstance.methods.ownerOf(userHoldings[i]).call();
           query = query.toLowerCase();
-          let approvalState = await this.state.provenanceInstance.methods.getApprovalState(e).call();
+          let approvalState = await this.state.provenanceInstance.methods.getApprovalState(userHoldings[i]).call();
           if(query === this.state.accounts[0] && approvalState === true){
-            userApprovals.push(e);
+            userApprovals.push(userHoldings[i]);
           }
-        })
+        }
       }
     }catch(err){
       console.log("Error while init,approvals");
@@ -143,8 +149,8 @@ class App extends Component {
     }
 
     this.setState({
+      awaitingApprovals:userApprovals,
       accountOwnedTokenIds:userHoldings,
-      awaitingApprovals:userApprovals
     })
   }
 
@@ -154,24 +160,24 @@ class App extends Component {
   handleAccountsChanged = async (accounts)=>{
     this.setState({
       accounts:accounts.map(account=>account.toLowerCase()),
-      isCurrentAccountVerified:await this.state.legalEntityVerificationInstance.methods.isVerified(accounts[0]).call()
+      isCurrentAccountVerified:await this.state.legalEntityVerificationInstance.methods.isVerified(accounts[0]).call(),
     });
     let isLEVChairman = false;
     let isProvenanceChairman = false;
-
+    
     if(this.state.LEVChairman === this.state.accounts[0]){
       isLEVChairman = true;
     }
     if(this.state.provenanceChairman === this.state.accounts[0]){
       isProvenanceChairman = true;
     }
-
-    await this.updateAccountOperationStatus();
+    
     
     this.setState({
       isUserLEVChairman:isLEVChairman,
       isUserProvenanceChairman:isProvenanceChairman,
     })
+    await this.updateAccountOperationStatus();
   }
 
   /**
@@ -367,6 +373,14 @@ class App extends Component {
   handleTokenHistoryQuery = async ()=>{
     try{
       let historyQueryResult = await this.state.provenanceInstance.methods.getAllOwners(this.state.queryTokenId).call();
+      for(let i=0;i<historyQueryResult.length;i++){
+        if(i === 0){
+          historyQueryResult[i] = "Origin: "+historyQueryResult[i]
+        }
+        else{
+          historyQueryResult[i] = i.toString() + ". " + historyQueryResult[i]
+        }
+      }
 
       if(historyQueryResult.length > 0){
         this.setState({
@@ -508,12 +522,12 @@ class App extends Component {
                 </div>
                 <div>
                   <p display={(!(this.state.isHistoryQuerySuccess===null)).toString()}>{this.state.historyQuery.length === 0 ?(this.state.isHistoryQuerySuccess ? null:'The token does not exist.'):`${this.state.queryTokenId} 's history:`}</p>
-                  <ul display={(this.state.historyQuery.length !== 0).toString()} className="list-group">
+                  <ol display={(this.state.historyQuery.length !== 0).toString()} className="list-group list-group-numbered">
                     {
                       this.state.historyQuery.map((e)=>{
                         return <li key={e} className="list-group-item">{e}</li>})
                     }
-                  </ul> 
+                  </ol> 
                 </div>
             </div>
         </div>
@@ -522,7 +536,7 @@ class App extends Component {
             <h3>Account Operations</h3>
             <p><b>Your current account:</b> {this.state.accounts[0]}</p>
             <p><b>Your verification status:</b> {this.state.isCurrentAccountVerified ? "Verified":"Non-verified"}</p>
-            <p><b>Your current owned tokenId's</b></p>
+            <p><b>Your current owned tokenId's</b> Total Token Count:{this.state.accountOwnedTokenIds.length}</p>
             <div>
               <p>{this.state.accountOwnedTokenIds.length === 0 ?'You currently own no token.':null}</p>
               <ul display={(this.state.accountOwnedTokenIds.length !== 0).toString()} className="list-group">
@@ -532,7 +546,7 @@ class App extends Component {
                 }
               </ul> 
             </div>
-            <p><b>Your current awaiting token approvals tokenId's</b></p>
+            <p><b>Your current awaiting token approvals tokenId's</b> Awaiting Token Count:{this.state.awaitingApprovals.length}</p>
             <div>
               <p>{this.state.awaitingApprovals.length === 0 ?'You currently have no awaiting approval.':null}</p>
               <ul display={(this.state.awaitingApprovals.length !== 0).toString()} className="list-group">
