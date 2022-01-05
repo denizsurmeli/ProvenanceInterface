@@ -2,8 +2,7 @@ import React, { Component } from "react";
 import LegalEntityVerification from "./contracts/LegalEntityVerification.json";
 import Provenance from "./contracts/Provenance.json";
 import getWeb3 from "./getWeb3";
-import "react-loader-spinner/dist/loader/css/react-spinner-loader.css";
-import Loader from "react-loader-spinner";
+
 
 
 // config for Avalanche Fuji Testnet.
@@ -108,9 +107,6 @@ class App extends Component {
     })
   }
 
-  updateAwaitingTokens = async() =>{
-    
-  }
 
   updateAccountOperationStatus = async ()=>{
     let currentSupply = await this.state.provenanceInstance.methods.serialId().call();
@@ -133,6 +129,7 @@ class App extends Component {
     }
 
     try{
+      console.log(userHoldings);
       if(userHoldings.length > 0){
         for(let i =0;i<userHoldings.length;i++){
           let query = await this.state.provenanceInstance.methods.ownerOf(userHoldings[i]).call();
@@ -142,12 +139,23 @@ class App extends Component {
             userApprovals.push(userHoldings[i]);
           }
         }
+        // await userHoldings.map(async (e)=>{
+        //   let query = await this.state.provenanceInstance.methods.ownerOf(e).call();
+        //   query = query.toLowerCase();
+        //   let approvalState = await this.state.provenanceInstance.methods.getApprovalState(e).call();
+        //   if(query === this.state.accounts[0] && approvalState === true){
+        //     console.log(e);
+        //     userApprovals.push(e);
+        //     console.log(userApprovals);
+        //   }
+        // })
       }
     }catch(err){
       console.log("Error while init,approvals");
       console.log(err);
     }
 
+    console.log("a");
     this.setState({
       awaitingApprovals:userApprovals,
       accountOwnedTokenIds:userHoldings,
@@ -310,6 +318,8 @@ class App extends Component {
       console.error(err);
     }
   }
+
+
   handleApproveOwnership = async ()=>{
     try{
       let ownerOfTheToken = await this.state.provenanceInstance.methods.ownerOf(this.state.tokenToBeApproved).call();

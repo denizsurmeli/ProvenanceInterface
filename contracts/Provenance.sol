@@ -97,7 +97,9 @@ contract Provenance is ERC721{
         require(ownerOf(_tokenId) ==  _address,"Only the owner of the token can perform actions.");
         _;
     }
-
+    /// @notice Only approved tokens can be subject to actions.
+    /// @param _tokenId ID of the token to be queried against. 
+    /// @param _address In query address. 
     modifier onlyApprovedToken(uint256 _tokenId,address _address){
         require(ownerOf(_tokenId) == _address,"Only the owner of the token can perform actions.");
         require(approvalState[_tokenId] == false,"You can only perform operations on approved tokens.");
