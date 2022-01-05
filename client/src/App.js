@@ -129,7 +129,6 @@ class App extends Component {
     }
 
     try{
-      console.log(userHoldings);
       if(userHoldings.length > 0){
         for(let i =0;i<userHoldings.length;i++){
           let query = await this.state.provenanceInstance.methods.ownerOf(userHoldings[i]).call();
@@ -139,26 +138,23 @@ class App extends Component {
             userApprovals.push(userHoldings[i]);
           }
         }
-        // await userHoldings.map(async (e)=>{
-        //   let query = await this.state.provenanceInstance.methods.ownerOf(e).call();
-        //   query = query.toLowerCase();
-        //   let approvalState = await this.state.provenanceInstance.methods.getApprovalState(e).call();
-        //   if(query === this.state.accounts[0] && approvalState === true){
-        //     console.log(e);
-        //     userApprovals.push(e);
-        //     console.log(userApprovals);
-        //   }
-        // })
       }
     }catch(err){
       console.log("Error while init,approvals");
       console.log(err);
     }
 
-    console.log("a");
+    let holdings = []
+
+    userHoldings.map((e)=>{
+      if(!userApprovals.includes(e)){
+        holdings.push(e);
+      }
+    })
+
     this.setState({
       awaitingApprovals:userApprovals,
-      accountOwnedTokenIds:userHoldings,
+      accountOwnedTokenIds:holdings,
     })
   }
 
@@ -210,6 +206,10 @@ class App extends Component {
     }
   }
 
+  /**
+   * Handle legal entity verification
+   */
+
   handleLEVVerify = async ()=>{
     try{
       await this.state.legalEntityVerificationInstance.methods.verify(this.state.toBeVerifiedAccount).send({from:this.state.accounts[0]});
@@ -234,6 +234,9 @@ class App extends Component {
     }
   }
 
+  /**
+   * Handle legal entity unverification
+   */
   handleLEVUnverify = async ()=>{
     try{
       await this.state.legalEntityVerificationInstance.methods.unverify(this.state.toBeUnverifiedAccount).send({from:this.state.accounts[0]});
@@ -449,6 +452,7 @@ class App extends Component {
     //catch all non-specified error. Should left with 1-2 edge cases after full build.
     }catch(err){
       alert("OOPS! Something went wrong! Check console for further errors.");
+      if(err)
       console.error(err);
     }
   }
