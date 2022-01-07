@@ -92,6 +92,7 @@ Contract addresses may vary for each deployment. However, you can follow the lat
 
 # Frontend
 - We have used [React](https://reactjs.org/) as our frontend library. You can see the source code under [here](./client/src).
+- You should have migrated your contracts before interacting with the interface. Please see usage section above.
 
 ### Usage
 

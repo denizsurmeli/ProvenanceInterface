@@ -260,6 +260,7 @@ class App extends Component {
     }
   }
 
+  
   handleMint = async ()=>{
     try{
       await this.state.provenanceInstance.methods.mintProductToken(this.state.zipCode).send({from:this.state.accounts[0]});
