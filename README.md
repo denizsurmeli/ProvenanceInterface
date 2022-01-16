@@ -107,6 +107,23 @@ npm start
 ```
 - And you are set, ready to interact with the app.
 
+# User Interface 
+
+### Provenance User Interface
+
+![alt text](https://github.com/ooodogodogodogo/playground-c425zjs7/blob/master/Provenance%20Part.png)
+- You can see Legal Entity address on top of the screen. You can see your account's address, verification status owned token ids and tokens awaiting to be approved.
+- You should enter the receiver's address on the left box and token id to the right box. Then, that token will disappear from the owned token section when you click "Send Token!".
+- When you enter a token id that awaits approval to the Approve Token box and click "Approve Ownership!", that token will disappear from the awaiting approval section and appear on the owned token section if the operation succeed.
+- When you enter a token id and click "Get the history of the token!", origin of the token will be shown on the top of the result and current owner will be shown on the bottom. The owners in between origin and current user shown in order.
+
+### Legal Entity User Interface
+
+![alt text](https://github.com/ooodogodogodogo/playground-c425zjs7/blob/master/Legal%20Entity%20Part.png)
+- We have verify and unverify operations in addition to Provenance User Interface operations and fields. Also, you can mint a token in this user interface. Mint operation takes a few seconds to be completed, and sends a completion message to the user.
+
+
+
 # Q&A:
  - How to ensure there is only one state? : We pass the address of the deployed state authority to the Provenance constructor, meaning that only state we will listen is the one with given address.
  - How to ensure no token has two owners at the same time? : ERC721 handles it.
