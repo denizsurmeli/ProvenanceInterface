@@ -120,7 +120,7 @@ npm start
 ### Legal Entity User Interface
 
 ![alt text](https://github.com/ooodogodogodogo/playground-c425zjs7/blob/master/Legal%20Entity%20Part.png)
-- We have verify and unverify operations in addition to Provenance User Interface operations and fields. Also, you can mint a token in this user interface. Mint operation takes a few seconds to be completed, and sends a completion message to the user.
+- We have verify and unverify operations in addition to Provenance User Interface operations and fields. Also, you can mint a token if you are the provenance chairman. Mint operation takes a few seconds to be completed, and sends a completion message to the user.
 
 
 
