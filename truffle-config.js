@@ -14,7 +14,7 @@ module.exports = {
       provider:()=>{
         return new HDWalletProvider(process.env.MNEMONIC,process.env.INFURA_RINKEBY_URL,0)
       },
-      network_id:"*"
+      network_id:"4"
     },
     fuji:{
       provider:()=>{
@@ -24,7 +24,7 @@ module.exports = {
     },
     ganache:{
       provider:()=>{
-        return new HDWalletProvider(process.env.MNEMONIC,process.env.GANACHE_URL,0);
+        return new HDWalletProvider(process.env.GANACHE_MNEMONIC,process.env.GANACHE_URL,0);
       },
       network_id:5777
     }
@@ -34,9 +34,7 @@ module.exports = {
       version:"^0.8.5"
     }
   },
-  plugins: [
-    'truffle-plugin-verify'
-  ],
+  plugins: ['truffle-plugin-verify'],
   api_keys:{
     etherscan:process.env.ETHERSCAN_API_KEY
   },

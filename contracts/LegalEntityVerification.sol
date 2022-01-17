@@ -2,8 +2,7 @@
 pragma solidity ^0.8.5;
 
 /// @title Legal Entity Verification
-/// @author Deniz Surmeli
-/// @author Doğukan Türksoy
+/// @author Deniz Surmeli, Doğukan Türksoy
 /// @notice Use it only for simulation.
 /// @dev It's used in ./Provenance.sol contract for address authorization 
 

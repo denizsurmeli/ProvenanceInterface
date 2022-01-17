@@ -27,8 +27,7 @@ import "./LegalEntityVerification.sol";
 
 
 /// @title Provenance tracking system for manifactured items using ERC721-tokens.
-/// @author Deniz Surmeli
-/// @author Doğukan Türksoy
+/// @author Deniz Surmeli, Doğukan Türksoy
 /// @notice Use it only for simulation
 /// @dev Contract is a ERC721 implementation.
 contract Provenance is ERC721{
