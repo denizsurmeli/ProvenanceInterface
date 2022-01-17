@@ -212,9 +212,17 @@ class App extends Component {
 
   handleLEVVerify = async ()=>{
     try{
+      let isVerified = await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.toBeVerifiedAccount).call();
+      if(isVerified){
+        alert("The account is already verified.");
+        this.setState({
+          isVerifySuccessful:false,
+          isCurrentAccountVerified:await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.accounts[0]).call()
+        })
+        throw new Error("IsAlreadyVerified");
+      }
       await this.state.legalEntityVerificationInstance.methods.verify(this.state.toBeVerifiedAccount).send({from:this.state.accounts[0]});
       this.setState({
-        toBeVerifiedAccount:"",
         isVerifySuccessful:true,
         isCurrentAccountVerified:await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.accounts[0]).call()
       })
@@ -226,7 +234,6 @@ class App extends Component {
     }catch(err){
       alert("Something went wrong with the verification process.");
       this.setState({
-        toBeVerifiedAccount:"",
         isVerifySuccessful:false
       })
       console.error(err);
@@ -239,6 +246,14 @@ class App extends Component {
    */
   handleLEVUnverify = async ()=>{
     try{
+      let isUnverified = await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.toBeUnverifiedAccount).call();
+      if(!isUnverified){
+        alert("The account is already unverified.");
+        this.setState({
+          isUnverifySuccessful:false,
+        })
+        throw new Error("IsAlreadyUnverified");
+      }
       await this.state.legalEntityVerificationInstance.methods.unverify(this.state.toBeUnverifiedAccount).send({from:this.state.accounts[0]});
       this.setState({
         toBeUnverifiedAccount:"",
@@ -288,6 +303,17 @@ class App extends Component {
     try{
       let isTokenApproved = await this.state.provenanceInstance.methods.getApprovalState(parseInt(this.state.tokenId)).call();
       let isToVerified = await this.state.legalEntityVerificationInstance.methods.isVerified(this.state.sendTo).call();
+      try{
+        let tokenAddress = await this.state.provenanceInstance.methods.ownerOf(this.state.tokenId).call();
+      }catch(_err){
+        alert("The token does not exist.");
+        this.setState({
+          sendTo:null,
+          tokenId:null,
+          isTransferSuccessful:false
+        });
+      }
+      
       if(isToVerified === false){
         alert("You can't send a token to an address that is not verified !");
         this.setState({

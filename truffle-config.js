@@ -20,7 +20,7 @@ module.exports = {
       provider:()=>{
         return new HDWalletProvider(process.env.MNEMONIC,process.env.AVALANCHE_FUJI_TESTNET_URL,0)
       },
-      network_id:"*"
+      network_id:"1"
     },
     ganache:{
       provider:()=>{
